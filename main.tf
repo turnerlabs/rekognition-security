@@ -42,6 +42,11 @@ resource "aws_iam_role_policy_attachment" "lambda-s3-attach" {
     policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "lambda-attach" {
+    role = "${aws_iam_role.iam_for_lambda.name}"
+    policy_arn = "arn:aws:iam::aws:policy/AWSLambdaFullAccess"
+}
+
 data "archive_file" "lambda_zip" {
     type        = "zip"
     source_dir  = "."
@@ -66,6 +71,30 @@ resource "aws_lambda_function" "facial-rekognition" {
     }
 }
 
+resource "aws_lambda_function" "facial-rekognition-train" {
+    function_name = "train-faces"
+    filename = "${data.archive_file.lambda_zip.output_path}"
+    source_code_hash = "${data.archive_file.lambda_zip.output_base64sha256}"
+    role = "${aws_iam_role.iam_for_lambda.arn}"
+    handler = "train.handler"
+    timeout = 300
+    memory_size = 1024
+    runtime = "nodejs4.3"
+    environment {
+        variables = {
+          COLLECTION = "${var.collection}"
+        }
+    }
+}
+
+resource "aws_lambda_permission" "train_perm" {
+  statement_id  = "AllowExecutionFromS3BucketTrain"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.facial-rekognition-train.arn}"
+  principal     = "s3.amazonaws.com"
+  source_arn    = "${aws_s3_bucket.bucket.arn}"
+}
+
 resource "aws_lambda_permission" "allow_bucket" {
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
@@ -81,6 +110,13 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
     lambda_function_arn = "${aws_lambda_function.facial-rekognition.arn}"
     events              = ["s3:ObjectCreated:Put"]
     filter_prefix       = "og_images/"
+    filter_suffix       = ".jpg"
+  }
+
+  lambda_function {
+    lambda_function_arn = "${aws_lambda_function.facial-rekognition-train.arn}"
+    events              = ["s3:ObjectCreated:Put", "s3:ObjectCreated:Copy"]
+    filter_prefix       = "train/"
     filter_suffix       = ".jpg"
   }
 }
