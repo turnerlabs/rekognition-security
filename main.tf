@@ -27,7 +27,7 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "lambda-vpc-attach" {
+resource "aws_iam_role_policy_attachment" "lambda-rekognition-attach" {
     role = "${aws_iam_role.iam_for_lambda.name}"
     policy_arn = "arn:aws:iam::aws:policy/AmazonRekognitionFullAccess"
 }
@@ -37,9 +37,9 @@ resource "aws_iam_role_policy_attachment" "lambda-cw-attach" {
     policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }
 
-resource "aws_iam_role_policy_attachment" "lambda-rekognition-attach" {
+resource "aws_iam_role_policy_attachment" "lambda-s3-attach" {
     role = "${aws_iam_role.iam_for_lambda.name}"
-    policy_arn = "arn:aws:iam::aws:policy/AmazonRekognitionFullAccess"
+    policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
 data "archive_file" "lambda_zip" {
