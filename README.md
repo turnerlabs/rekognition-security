@@ -23,6 +23,7 @@ upload a photo s3://${s3_bucket}/og_images.
 This will fire the lambda and will alert the slack channel you set if there is a face in the picture
 that is not in your collection.
 
-TODOS:
 
-1. Add lambda that trains the collection when an image is uploaded to a specific directory.
+## Training
+If you want to train an image, just put or copy it in `/train` in your s3 bucket. The train lambda function will automatically
+train the images in that folder. This will allow you to hone what people alert the system.
