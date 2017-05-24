@@ -1,0 +1,6 @@
+node_modules
+terraform.tfstate.backup
+terraform.tfstate
+facial-rekognition.zip
+local_config
+vars.tf_vars

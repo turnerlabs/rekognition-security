@@ -1,0 +1,21 @@
+{
+  "name": "facial-rekognition-app",
+  "version": "1.0.0",
+  "description": "Detect Faces and alert if somone does not match",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "v4.3.0",
+    "npm": "2.14.12"
+  },
+  "author": "josh.kurz@turner.com",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.50.0",
+    "jimp": "^0.2.27",
+    "node-fetch": "^1.6.3",
+    "node-slack-upload": "^1.2.1"
+  }
+}
