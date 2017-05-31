@@ -8,12 +8,12 @@ pip install requests -t folder-with-code/lib/
 Then zip the folder and create a lambda function with the command
 
 aws lambda create-function \
---region us-west-2 \
+--region us-west-2(change according to your own region) \
 --function-name HelloPython \
---zip-file fileb://deployment-package.zip \
---role arn:aws:iam::account-id:role/lambda_basic_execution  \
---handler hello_python.my_handler \
---runtime python3.6 \
+--zip-file fileb://deployment-package.zip(the zip file name) \
+--role arn:aws:iam::account-id:role/lambda_basic_execution(your own arn code)  \
+--handler train_lambda.lambda_handler \
+--runtime python2.7 \
 --timeout 15 \
 --memory-size 512
 
