@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.50.0",
+    "bluebird": "^3.5.0",
     "jimp": "^0.2.27",
     "node-fetch": "^1.6.3",
     "node-slack-upload": "^1.2.1"
