@@ -28,11 +28,11 @@ def findFaces(collection, srcBucket, srcKey):
             )
     except Exception as e:
         print "Your exception is: ",e
-        sys.exit()
+        return 'Code exception in findfaces'
 
     print 'Number of faces:',len(response['FaceDetails'])
     if len(response['FaceDetails'])!=0:
-        crop(response,srcBucket,srcKey)
+        return crop(response,srcBucket,srcKey)
     else:
         return 'no faces'
 
@@ -73,7 +73,7 @@ def crop(data, srcBucket, srcKey):
         response = searchImageinCollection(COLLECTION, srcBucket, imgByteArr)
 
         #If no matches found add the image to test folder
-        if len(response['FaceMatches'])==0:
+        if response != 'false' and len(response['FaceMatches'])==0:
             print 'alert'
             name = 'test/'+tmpCropped
             #put object in bucket
@@ -91,10 +91,11 @@ def crop(data, srcBucket, srcKey):
             # Add SMS Subscribers
             for number in list_of_contacts:
                 sns.publish(PhoneNumber = number, Message=url)
-
+    return 'Faces found'
 
 
 def searchImageinCollection(collection, srcBucket, imgBytes):
+
     client = boto3.client('rekognition')
     #Search image in collection
     try:
@@ -109,7 +110,7 @@ def searchImageinCollection(collection, srcBucket, imgBytes):
 
     except Exception as e:
         print "Your exception is: ",e
-        sys.exit()
+        return 'false'
 
 
 
@@ -128,4 +129,5 @@ def lambda_handler(event, context):
 if __name__ == '__main__':
     srcBucket = str(os.environ.get('LOCAL_BUCKET'))
     srcKey = str(os.environ.get('FILE'))
-    findFaces(COLLECTION,srcBucket,srcKey)
+    res = findFaces(COLLECTION,srcBucket,srcKey)
+    print res
