@@ -73,7 +73,7 @@ def crop(data, srcBucket, srcKey):
         response = searchImageinCollection(COLLECTION, srcBucket, imgByteArr)
 
         #If no matches found add the image to test folder
-        if response != 'false' and len(response['FaceMatches'])==0:
+        if response != False and len(response['FaceMatches'])==0:
             print 'alert'
             name = 'test/'+tmpCropped
             #put object in bucket
@@ -110,7 +110,7 @@ def searchImageinCollection(collection, srcBucket, imgBytes):
 
     except Exception as e:
         print "Your exception is: ",e
-        return 'false'
+        return False
 
 
 
