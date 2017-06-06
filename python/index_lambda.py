@@ -13,7 +13,7 @@ import urllib
 
 list_of_contacts = ['+14049604358','+14704944634']
 COLLECTION = str(os.environ.get('COLLECTION'))
-
+BUFFER = int(os.environ.get('BUFFER'))
 def findFaces(collection, srcBucket, srcKey):
     client = boto3.client('rekognition')
     #Find faces in the image
@@ -61,8 +61,8 @@ def crop(data, srcBucket, srcKey):
 
         widImage = img.size[0]
         htImage = img.size[1]
-        img1 = img.crop((left * widImage,top * htImage ,left * widImage + width * widImage,top * htImage + height * htImage))
-
+        img1 = img.crop((left * widImage - BUFFER, top * htImage - BUFFER,left * widImage + width * widImage + (2 * BUFFER),top * htImage + height * htImage + (2 * BUFFER)))
+        #img1.save('Cropped.jpg')
         key = srcKey.replace('/',"")
         #naming the image
         tmpCropped = 'cropped_'+str(i)+key
