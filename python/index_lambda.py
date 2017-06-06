@@ -1,27 +1,34 @@
 #This code finds faces from an image, crops the faces, searches the faces in the AWS collection and adds them to a s3 bucket
 #if the image is not found in the collection
 
-from boto.s3.connection import S3Connection
 import os
+import sys
+lib_path = os.path.abspath(os.path.join('lib'))
+sys.path.append(lib_path)
 import boto3
 from PIL import Image
-import sys
 import botocore
 import io
+import urllib
 
+list_of_contacts = ['+14049604358','+14704944634']
 COLLECTION = str(os.environ.get('COLLECTION'))
 
 def findFaces(collection, srcBucket, srcKey):
     client = boto3.client('rekognition')
     #Find faces in the image
-    response = client.detect_faces(
-        Image={
-            'S3Object': {
-                'Bucket': srcBucket,
-                'Name': srcKey
-            }
-        },
-        )
+    try:
+        response = client.detect_faces(
+            Image={
+                'S3Object': {
+                    'Bucket': srcBucket,
+                    'Name': srcKey
+                }
+            },
+            )
+    except Exception as e:
+        print "Your exception is: ",e
+        sys.exit()
 
     print 'Number of faces:',len(response['FaceDetails'])
     if len(response['FaceDetails'])!=0:
@@ -31,10 +38,13 @@ def findFaces(collection, srcBucket, srcKey):
 
 
 def crop(data, srcBucket, srcKey):
+    client = boto3.client('s3')
     s3 = boto3.resource('s3')
+    localFilename = '/tmp/{}'.format(os.path.basename(srcKey))
+
     #Download image to local
     try:
-        s3.Bucket(srcBucket).download_file(srcKey, 'imageToCrop.jpg')
+        s3.Bucket(srcBucket).download_file(srcKey, localFilename)
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             print("The object does not exist.")
@@ -42,8 +52,7 @@ def crop(data, srcBucket, srcKey):
             raise
 
     # Load the original image:
-    img = Image.open("imageToCrop.jpg")
-
+    img = Image.open(localFilename)
     for i in range (0,len(data['FaceDetails'])):
         width = data['FaceDetails'][i]['BoundingBox']['Width']
         height = data['FaceDetails'][i]['BoundingBox']['Height']
@@ -61,8 +70,8 @@ def crop(data, srcBucket, srcKey):
         imgByteArr = io.BytesIO()
         img1.save(imgByteArr, format='JPEG')
         imgByteArr = imgByteArr.getvalue()
-
         response = searchImageinCollection(COLLECTION, srcBucket, imgByteArr)
+
         #If no matches found add the image to test folder
         if len(response['FaceMatches'])==0:
             print 'alert'
@@ -70,26 +79,53 @@ def crop(data, srcBucket, srcKey):
             #put object in bucket
             object = s3.Bucket(srcBucket).put_object(Body = imgByteArr, Key = name)
 
+            sns = boto3.client("sns")
+            #image url
+            url = client.generate_presigned_url(ClientMethod='get_object',Params={'Bucket': srcBucket,'Key': name})
+            # Send your sms message.
+
+
+            # Create the topic if it doesn't exist (this is idempotent)
+            # get its Amazon Resource Name
+
+            # Add SMS Subscribers
+            for number in list_of_contacts:
+                sns.publish(PhoneNumber = number, Message=url)
+
 
 
 def searchImageinCollection(collection, srcBucket, imgBytes):
     client = boto3.client('rekognition')
     #Search image in collection
-    response = client.search_faces_by_image(
-        CollectionId=collection,
-        Image={
-            'Bytes': imgBytes,
+    try:
+        response = client.search_faces_by_image(
+            CollectionId=collection,
+            Image={
+                'Bytes': imgBytes,
 
-        },
-    )
+            },
+        )
+        return response
+
+    except Exception as e:
+        print "Your exception is: ",e
+        sys.exit()
+
+
+
+def lambda_handler(event, context):
+    COLLECTION = str(os.environ.get('COLLECTION'))
+    # Read credentials from the environment
+    srcBucket = event["Records"][0]['s3']['bucket']['name']
+    srcKey = urllib.unquote(event["Records"][0]['s3']['object']['key'].replace("+", " "))
+    print srcBucket
+    print srcKey
+    response = findFaces(COLLECTION,srcBucket,srcKey)
+    print response
     return response
 
 
-
 if __name__ == '__main__':
-  # Code For the lambda_handler
-  #srcBucket = event["Records"][0]['s3']['bucket']['name']
-  #srcKey = urllib.unquote(event["Records"][0]['s3']['object']['key'].replace("+", " "))
-  srcBucket = str(os.environ.get('LOCAL_BUCKET'))
-  srcKey = str(os.environ.get('FILE'))
-  findFaces(COLLECTION,srcBucket,srcKey)
+    srcBucket = str(os.environ.get('LOCAL_BUCKET'))
+    srcKey = str(os.environ.get('FILE'))
+    findFaces(COLLECTION,srcBucket,srcKey)
