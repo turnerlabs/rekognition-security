@@ -71,7 +71,7 @@ def crop(data, srcBucket, srcKey):
         key = srcKey.replace('/',"")
         #naming the image
         tmpCropped = 'cropped_'+str(i)+key
-        img1.save(tmpCropped)
+        
         #Changing image to bytes
         imgByteArr = io.BytesIO()
         img1.save(imgByteArr, format='JPEG')
