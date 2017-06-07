@@ -11,9 +11,11 @@ import botocore
 import io
 import urllib
 
+# Add SMS Subscribers
 list_of_contacts = ['+14049604358','+14704944634']
 COLLECTION = str(os.environ.get('COLLECTION'))
-BUFFER = int(os.environ.get('BUFFER'))
+CROPBUFFER = int(os.environ.get('BUFFER'))
+
 def findFaces(collection, srcBucket, srcKey):
     client = boto3.client('rekognition')
     #Find faces in the image
@@ -34,7 +36,7 @@ def findFaces(collection, srcBucket, srcKey):
     if len(response['FaceDetails'])!=0:
         return crop(response,srcBucket,srcKey)
     else:
-        return 'no faces'
+        return 'No faces found.'
 
 
 def crop(data, srcBucket, srcKey):
@@ -61,11 +63,15 @@ def crop(data, srcBucket, srcKey):
 
         widImage = img.size[0]
         htImage = img.size[1]
-        img1 = img.crop((left * widImage - BUFFER, top * htImage - BUFFER,left * widImage + width * widImage + (2 * BUFFER),top * htImage + height * htImage + (2 * BUFFER)))
-        #img1.save('Cropped.jpg')
+
+        #Added Buffer to avoid tight cropping and provide room for detecting faces
+
+        img1 = img.crop((left * widImage - CROPBUFFER,top * htImage - CROPBUFFER,(left * widImage) + (width * widImage) + (2 * CROPBUFFER),(top * htImage) + (height * htImage) + (2 * CROPBUFFER)))
+
         key = srcKey.replace('/',"")
         #naming the image
         tmpCropped = 'cropped_'+str(i)+key
+
         #Changing image to bytes
         imgByteArr = io.BytesIO()
         img1.save(imgByteArr, format='JPEG')
@@ -74,30 +80,24 @@ def crop(data, srcBucket, srcKey):
 
         #If no matches found add the image to test folder
         if response != False and len(response['FaceMatches'])==0:
-            print 'alert'
+            print 'Alert'
             name = 'test/'+tmpCropped
             #put object in bucket
             object = s3.Bucket(srcBucket).put_object(Body = imgByteArr, Key = name)
 
             sns = boto3.client("sns")
+
             #image url
             url = client.generate_presigned_url(ClientMethod='get_object',Params={'Bucket': srcBucket,'Key': name})
+
             # Send your sms message.
-
-
-            # Create the topic if it doesn't exist (this is idempotent)
-            # get its Amazon Resource Name
-
-            # Add SMS Subscribers
             for number in list_of_contacts:
                 sns.publish(PhoneNumber = number, Message=url)
-    return 'Faces found'
 
 
 def searchImageinCollection(collection, srcBucket, imgBytes):
 
     client = boto3.client('rekognition')
-    #Search image in collection
     try:
         response = client.search_faces_by_image(
             CollectionId=collection,
@@ -109,9 +109,8 @@ def searchImageinCollection(collection, srcBucket, imgBytes):
         return response
 
     except Exception as e:
-        print "Your exception is: ",e
-        return False
-
+         print "Your exception in Search Image in Collection is: ", e
+         return False
 
 
 def lambda_handler(event, context):
@@ -119,11 +118,8 @@ def lambda_handler(event, context):
     # Read credentials from the environment
     srcBucket = event["Records"][0]['s3']['bucket']['name']
     srcKey = urllib.unquote(event["Records"][0]['s3']['object']['key'].replace("+", " "))
-    print srcBucket
-    print srcKey
     response = findFaces(COLLECTION,srcBucket,srcKey)
-    print response
-    return response
+    return
 
 
 if __name__ == '__main__':
