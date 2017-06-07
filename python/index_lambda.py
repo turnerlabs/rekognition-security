@@ -66,12 +66,12 @@ def crop(data, srcBucket, srcKey):
 
         #Added Buffer to avoid tight cropping and provide room for detecting faces
 
-        img1 = img.crop((left * widImage - CROPBUFFER,top * htImage - CROPBUFFER,(left * widImage) + (width * widImage) + (2 * CROPBUFFER),(top * htImage) + (height * htImage) + (2 * CROPBUFFER)))
+        img1 = img.crop(((left * widImage) - CROPBUFFER,(top * htImage) - CROPBUFFER,(left * widImage) + (width * widImage) + (2 * CROPBUFFER),(top * htImage) + (height * htImage) + (2 * CROPBUFFER)))
 
         key = srcKey.replace('/',"")
         #naming the image
         tmpCropped = 'cropped_'+str(i)+key
-
+        img1.save(tmpCropped)
         #Changing image to bytes
         imgByteArr = io.BytesIO()
         img1.save(imgByteArr, format='JPEG')
@@ -93,7 +93,7 @@ def crop(data, srcBucket, srcKey):
             # Send your sms message.
             for number in list_of_contacts:
                 sns.publish(PhoneNumber = number, Message=url)
-
+    return ''
 
 def searchImageinCollection(collection, srcBucket, imgBytes):
 
@@ -119,7 +119,7 @@ def lambda_handler(event, context):
     srcBucket = event["Records"][0]['s3']['bucket']['name']
     srcKey = urllib.unquote(event["Records"][0]['s3']['object']['key'].replace("+", " "))
     response = findFaces(COLLECTION,srcBucket,srcKey)
-    return
+    return response
 
 
 if __name__ == '__main__':
