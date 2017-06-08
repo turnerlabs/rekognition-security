@@ -14,7 +14,7 @@ import urllib
 # Add SMS Subscribers
 list_of_contacts = ['+14049604358','+14704944634']
 COLLECTION = str(os.environ.get('COLLECTION'))
-CROPBUFFER = int(os.environ.get('BUFFER'))
+CROPBUFFER = int(os.environ.get('CROPBUFFER'))
 
 def findFaces(collection, srcBucket, srcKey):
     client = boto3.client('rekognition')
@@ -71,7 +71,7 @@ def crop(data, srcBucket, srcKey):
         key = srcKey.replace('/',"")
         #naming the image
         tmpCropped = 'cropped_'+str(i)+key
-        
+
         #Changing image to bytes
         imgByteArr = io.BytesIO()
         img1.save(imgByteArr, format='JPEG')
@@ -92,7 +92,7 @@ def crop(data, srcBucket, srcKey):
 
             # Send your sms message.
             for number in list_of_contacts:
-                sns.publish(PhoneNumber = number, Message=url)
+                sns.publish(PhoneNumber = number, Message=url, Subject = 'Fridge Alert')
     return ''
 
 def searchImageinCollection(collection, srcBucket, imgBytes):
