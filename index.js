@@ -15,6 +15,7 @@ let WEBHOOK_URL = "https://slack.com/api/files.upload";
 let TOKEN = process.env.TOKEN;
 let LOCAL_BUCKET = process.env.LOCAL_BUCKET;
 let LOCAL_FILE = process.env.LOCAL_FILE;
+let SIMILARITY_THRESHOLD = process.env.SIMILARITY_THRESHOLD || 95;
 let slack = new Slack(TOKEN);
 
 exports.handler = main;
@@ -43,7 +44,7 @@ function main(event, context, callback) {
         crop(data, srcBucket, srcKey)
         .then((data) => {
           data.map((faceData) => {
-            console.log('Face Rekognition Data: ', JSON.stringify(faceData))
+            console.log('Face Rekognition Data: ', JSON.stringify(faceData));
             if (faceData.data && faceData.data.FaceMatches.length === 0) {
                 let promise = fireSlackMessage(faceData)
                 .then((data) => {
@@ -159,12 +160,14 @@ function rekognize(face) {
           CollectionId: face.collection,
           Image: {
             Bytes: face.data
-          }
+          },
+          FaceMatchThreshold: SIMILARITY_THRESHOLD
       };
 
       rekognition.searchFacesByImage(params).promise()
       .then((data) => resolve(data),
       (err) => {
+         console.log(err)
          if (err.code === "InvalidParameterException") {
              resolve(false);
          }
