@@ -11,10 +11,10 @@ import botocore
 import io
 import urllib
 
-# Add SMS Subscribers
-list_of_contacts = ['+14049604358','+14704944634']
-COLLECTION = str(os.environ.get('COLLECTION'))
-CROPBUFFER = int(os.environ.get('BUFFER'))
+#environment variables
+COLLECTION = str(os.environ.get('COLLECTION')) #Collection to which images are saved
+CROPBUFFER = int(os.environ.get('BUFFER'))#Buffer to avoid tight cropping of faces, (values like - 10,15,20)
+TOPICARN = str(os.environ.get('TOPICARN'))#TopicArn of the sns service
 
 def findFaces(collection, srcBucket, srcKey):
     client = boto3.client('rekognition')
@@ -42,6 +42,7 @@ def findFaces(collection, srcBucket, srcKey):
 def crop(data, srcBucket, srcKey):
     client = boto3.client('s3')
     s3 = boto3.resource('s3')
+    sns = boto3.client("sns")
     localFilename = '/tmp/{}'.format(os.path.basename(srcKey))
 
     #Download image to local
@@ -71,7 +72,7 @@ def crop(data, srcBucket, srcKey):
         key = srcKey.replace('/',"")
         #naming the image
         tmpCropped = 'cropped_'+str(i)+key
-        
+
         #Changing image to bytes
         imgByteArr = io.BytesIO()
         img1.save(imgByteArr, format='JPEG')
@@ -84,15 +85,10 @@ def crop(data, srcBucket, srcKey):
             name = 'test/'+tmpCropped
             #put object in bucket
             object = s3.Bucket(srcBucket).put_object(Body = imgByteArr, Key = name)
+            #Bucket name and file name is published as the message to sns topic
+            strMessage = 'Bucket: '+srcBucket+' File Name: '+name
 
-            sns = boto3.client("sns")
-
-            #image url
-            url = client.generate_presigned_url(ClientMethod='get_object',Params={'Bucket': srcBucket,'Key': name})
-
-            # Send your sms message.
-            for number in list_of_contacts:
-                sns.publish(PhoneNumber = number, Message=url)
+            sns.publish(TopicArn=TOPICARN,Message=strMessage)
     return ''
 
 def searchImageinCollection(collection, srcBucket, imgBytes):
