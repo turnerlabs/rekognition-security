@@ -6,6 +6,7 @@ const AWS = require('aws-sdk');
 const fetch = require('node-fetch');
 const Jimp = require("jimp");
 const Slack = require('node-slack-upload');
+const Promise = require('bluebird');
 const rekognition = new AWS.Rekognition();
 const s3 = new AWS.S3();
 
@@ -42,6 +43,7 @@ function main(event, context, callback) {
         crop(data, srcBucket, srcKey)
         .then((data) => {
           data.map((faceData) => {
+            console.log('Face Rekognition Data: ', JSON.stringify(faceData))
             if (faceData.data && faceData.data.FaceMatches.length === 0) {
                 let promise = fireSlackMessage(faceData)
                 .then((data) => {
