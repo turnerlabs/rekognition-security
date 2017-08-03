@@ -5,7 +5,6 @@ import urllib
 
 lib_path = os.path.abspath(os.path.join('lib'))
 sys.path.append(lib_path)
-
 import requests
 
 def train(collection, srcBucket, srcKey):
