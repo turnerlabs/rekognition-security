@@ -33,6 +33,9 @@ def findFaces(collection, srcBucket, srcKey):
         return 'Code exception in findfaces'
 
     print 'Number of faces:',len(response['FaceDetails'])
+    print response['FaceDetails'][0]['Confidence']
+    print response['FaceDetails'][1]['Confidence']
+    print response['FaceDetails'][2]['Confidence']
     if len(response['FaceDetails'])!=0:
         return crop(response,srcBucket,srcKey)
     else:
@@ -71,6 +74,7 @@ def crop(data, srcBucket, srcKey):
         key = srcKey.replace('/',"")
         #naming the image
         tmpCropped = 'cropped_'+str(i)+key
+        img1.save(tmpCropped)
 
         #Changing image to bytes
         imgByteArr = io.BytesIO()
@@ -91,8 +95,8 @@ def crop(data, srcBucket, srcKey):
             url = client.generate_presigned_url(ClientMethod='get_object',Params={'Bucket': srcBucket,'Key': name})
 
             # Send your sms message.
-            for number in list_of_contacts:
-                sns.publish(PhoneNumber = number, Message=url, Subject = 'Fridge Alert')
+            # for number in list_of_contacts:
+            #     sns.publish(PhoneNumber = number, Message=url, Subject = 'Fridge Alert')
     return ''
 
 def searchImageinCollection(collection, srcBucket, imgBytes):
